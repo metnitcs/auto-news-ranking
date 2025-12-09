@@ -47,6 +47,9 @@ APIFY_API_TOKEN_2=your-second-apify-token
 # Facebook Page
 FB_PAGE_ID=your-facebook-page-id
 FB_PAGE_ACCESS_TOKEN=your-page-access-token
+
+# Cron Security
+CRON_SECRET=your-random-secret-key
 ```
 
 ### 3. รัน Dev Server
@@ -72,6 +75,7 @@ app/
 │   │   ├── analyze/     # AI Analyzer
 │   │   ├── ranking/     # Ranking Engine
 │   │   └── generate/    # Post Generator
+│   ├── cron/            # Daily Cron (Single Endpoint)
 │   └── posts/
 │       ├── action/      # Approve/Delete/Update
 │       ├── publish/     # Facebook Publisher
@@ -85,12 +89,19 @@ prompts/
 
 ---
 
-## ⏰ Cron Schedule (Vercel)
+## ⏰ Cron Schedule (GitHub Actions)
+
+เนื่องจาก Vercel Hobby Plan จำกัด Cron 1 ครั้ง/วัน เราจึงใช้ GitHub Actions รันทุก 4 ชม. แทน
 
 | เวลา (UTC) | Action |
 |-----------|--------|
-| 01:00, 05:00, 09:00, 13:00, 17:00, 21:00 | Crawl + Summarize + Analyze |
-| 11:00 | Ranking + Generate Posts |
+| 01:00, 05:00, 09:00, 13:00, 17:00, 21:00 | เรียก `/api/cron/daily` (ทำทุกขั้นตอน) |
+
+**การตั้งค่า GitHub Secrets:**
+ไปที่ Settings > Secrets and variables > Actions แล้วเพิ่ม:
+- `APP_URL`: URL ของเว็บ (เช่น `https://your-project.vercel.app`)
+- `CRON_SECRET`: ค่าเดียวกับใน `.env.local`
+
 
 ---
 
