@@ -16,7 +16,7 @@ jobs:
         run: |
           echo "Starting cron job at $(date)"
           
-          response=$(curl -s -w "\n%{http_code}" \
+          response=$(curl -s -L -w "\n%{http_code}" \
             -X GET "${APP_URL}/api/cron/daily" \
             -H "Authorization: Bearer ${CRON_SECRET}")
           

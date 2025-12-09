@@ -1,8 +1,8 @@
-
 "use client";
 
 import React, { useState } from 'react';
 import Swal from 'sweetalert2';
+import { useRouter } from 'next/navigation';
 
 interface RankingItem {
     id: string;
@@ -19,8 +19,18 @@ interface RankingListProps {
 }
 
 export const RankingList: React.FC<RankingListProps> = ({ items: initialItems }) => {
+    // We use props directly for rendering to ensure router.refresh() updates the list.
+    // Local state is only needed for optimistic updates if desired, 
+    // but here we can just rely on props + loading state for simplicity or use both.
+    // Let's use local state for immediate feedback + router.refresh for persistence sync.
     const [items, setItems] = useState(initialItems);
     const [loading, setLoading] = useState<string | null>(null);
+    const router = useRouter();
+
+    // Sync local state when props change (after router.refresh)
+    React.useEffect(() => {
+        setItems(initialItems);
+    }, [initialItems]);
 
     const handleDelete = async (id: string, title: string) => {
         const result = await Swal.fire({
@@ -40,19 +50,36 @@ export const RankingList: React.FC<RankingListProps> = ({ items: initialItems })
 
         setLoading(id);
         try {
-            // Remove from the list locally (and optionally delete from DB)
-            // For now, just remove from local state
+            // 1. Optimistic Update
             setItems(prev => prev.filter(item => item.id !== id));
 
-            await Swal.fire({
-                title: 'Removed!',
-                text: 'Item removed from ranking.',
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false,
-                background: '#1e293b',
-                color: '#e2e8f0'
+            // 2. Call API
+            const res = await fetch('/api/ranking/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, action: 'delete' })
             });
+            const data = await res.json();
+
+            if (data.success) {
+                // 3. Sync Server State
+                router.refresh();
+
+                await Swal.fire({
+                    title: 'Removed!',
+                    text: 'Item removed from ranking.',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: '#1e293b',
+                    color: '#e2e8f0'
+                });
+            } else {
+                // Revert optimistic update on failure
+                setItems(initialItems);
+                throw new Error(data.error || 'Failed to delete');
+            }
+
         } catch (e) {
             await Swal.fire({
                 title: 'Error',
@@ -71,7 +98,7 @@ export const RankingList: React.FC<RankingListProps> = ({ items: initialItems })
         <div className="flex flex-col space-y-3">
             <h3 className="mb-2 text-lg font-semibold text-slate-200">🏆 Daily Top 5</h3>
 
-            {items.length === 0 ? (
+            {!items || items.length === 0 ? (
                 <p className="text-sm text-slate-500">No ranking data available for today.</p>
             ) : (
                 items.map((item, index) => (

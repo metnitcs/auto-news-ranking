@@ -1,9 +1,9 @@
-
 "use client";
 
 import React, { useState } from 'react';
 import { PostReviewCard } from './PostReviewCard';
 import Swal from 'sweetalert2';
+import { useRouter } from 'next/navigation';
 
 interface PostDraft {
     id: string;
@@ -19,6 +19,7 @@ interface InteractivePostReviewProps {
 export const InteractivePostReview: React.FC<InteractivePostReviewProps> = ({ post }) => {
     const [hidden, setHidden] = useState(false);
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
     const handleAction = async (id: string, action: 'approve' | 'delete' | 'publish') => {
         const configs = {
@@ -70,6 +71,8 @@ export const InteractivePostReview: React.FC<InteractivePostReviewProps> = ({ po
 
             if (data.success) {
                 setHidden(true);
+                router.refresh(); // Refresh server state
+
                 if (action === 'publish') {
                     await Swal.fire({
                         title: 'Published! 🎉',
@@ -144,7 +147,7 @@ export const InteractivePostReview: React.FC<InteractivePostReviewProps> = ({ po
                     background: '#1e293b',
                     color: '#e2e8f0'
                 });
-                window.location.reload();
+                router.refresh(); // Soft refresh instead of window.reload
             } else {
                 await Swal.fire({
                     title: 'Error',
