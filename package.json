@@ -1,0 +1,33 @@
+{
+  "name": "auto-news-ranking",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.48.0",
+    "@types/js-yaml": "^4.0.9",
+    "js-yaml": "^4.1.1",
+    "next": "15.0.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "rss-parser": "^3.13.0",
+    "sweetalert2": "^11.26.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8",
+    "eslint-config-next": "15.0.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.3"
+  }
+}
