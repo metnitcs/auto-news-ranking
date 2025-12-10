@@ -92,10 +92,13 @@ export async function runRanker() {
             
             // Try to fix common issues
             try {
-                // Remove trailing commas
-                const fixed = cleanJson.replace(/,\s*([}\]])/g, '$1');
+                let fixed = cleanJson
+                    .replace(/,\s*([}\]])/g, '$1')  // Remove trailing commas
+                    .replace(/([^\\])"([^":,\]}\n]*?)"([^:,\]}])/g, '$1\'$2\'$3')  // Fix unescaped quotes in values
+                    .replace(/\n/g, ' ')  // Remove newlines
+                    .replace(/\r/g, '');  // Remove carriage returns
                 rankingResult = JSON.parse(fixed);
-                console.log("Fixed JSON by removing trailing commas");
+                console.log("Fixed JSON with sanitization");
             } catch (e2) {
                 throw new Error(`JSON Parse Error: ${e.message}`);
             }
