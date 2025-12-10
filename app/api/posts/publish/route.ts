@@ -34,28 +34,50 @@ export async function POST(request: Request) {
         }
 
         // 2. Publish to Facebook Graph API
-        const fbUrl = `https://graph.facebook.com/v18.0/${FB_PAGE_ID}/feed`;
-
-        const fbResponse = await fetch(fbUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                message: post.content,
-                access_token: FB_PAGE_ACCESS_TOKEN
-            })
-        });
-
-        const fbData = await fbResponse.json();
-
-        if (!fbResponse.ok) {
-            console.error('Facebook API Error:', fbData);
-            return NextResponse.json({
-                error: `Facebook Error: ${fbData.error?.message || 'Unknown error'}`,
-                details: fbData.error
-            }, { status: 500 });
+        let fbData;
+        
+        if (post.image_url) {
+            // Post with photo
+            const fbUrl = `https://graph.facebook.com/v18.0/${FB_PAGE_ID}/photos`;
+            const fbResponse = await fetch(fbUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: post.image_url,
+                    caption: post.content,
+                    access_token: FB_PAGE_ACCESS_TOKEN
+                })
+            });
+            fbData = await fbResponse.json();
+            if (!fbResponse.ok) {
+                console.error('Facebook API Error:', fbData);
+                return NextResponse.json({
+                    error: `Facebook Error: ${fbData.error?.message || 'Unknown error'}`,
+                    details: fbData.error
+                }, { status: 500 });
+            }
+        } else {
+            // Text-only post
+            const fbUrl = `https://graph.facebook.com/v18.0/${FB_PAGE_ID}/feed`;
+            const fbResponse = await fetch(fbUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: post.content,
+                    access_token: FB_PAGE_ACCESS_TOKEN
+                })
+            });
+            fbData = await fbResponse.json();
+            if (!fbResponse.ok) {
+                console.error('Facebook API Error:', fbData);
+                return NextResponse.json({
+                    error: `Facebook Error: ${fbData.error?.message || 'Unknown error'}`,
+                    details: fbData.error
+                }, { status: 500 });
+            }
         }
+
+
 
         // 3. Update post status in DB and save fb_post_id
         const { error: updateError } = await supabase

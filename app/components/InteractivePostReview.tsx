@@ -9,6 +9,7 @@ interface PostDraft {
     id: string;
     type: string;
     content: string;
+    image_url?: string;
     scheduled_at?: string;
 }
 

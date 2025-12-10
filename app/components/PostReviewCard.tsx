@@ -7,6 +7,7 @@ interface PostDraft {
     id: string;
     type: string;
     content: string;
+    image_url?: string;
     scheduled_at?: string;
 }
 
@@ -85,9 +86,14 @@ export const PostReviewCard: React.FC<PostReviewCardProps> = ({ post, loading, o
                         placeholder="Edit your post content..."
                     />
                 ) : (
-                    <div className="whitespace-pre-wrap font-sans max-h-48 overflow-y-auto">
-                        {cleanContent}
-                    </div>
+                    <>
+                        <div className="whitespace-pre-wrap font-sans max-h-48 overflow-y-auto">
+                            {cleanContent}
+                        </div>
+                        {post.image_url && (
+                            <img src={post.image_url} alt="Post infographic" className="mt-3 rounded-lg w-full" />
+                        )}
+                    </>
                 )}
             </div>
 

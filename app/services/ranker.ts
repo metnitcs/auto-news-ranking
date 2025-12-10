@@ -84,9 +84,21 @@ export async function runRanker() {
         let rankingResult;
         try {
             rankingResult = JSON.parse(cleanJson);
-        } catch (e) {
-            console.error("Failed to parse JSON. Raw Text:", responseText);
-            throw new Error(`JSON Parse Error: ${e}`);
+        } catch (e: any) {
+            console.error("Failed to parse JSON.");
+            console.error("Error:", e.message);
+            console.error("Clean JSON (first 1000 chars):", cleanJson.substring(0, 1000));
+            console.error("Clean JSON (last 500 chars):", cleanJson.substring(Math.max(0, cleanJson.length - 500)));
+            
+            // Try to fix common issues
+            try {
+                // Remove trailing commas
+                const fixed = cleanJson.replace(/,\s*([}\]])/g, '$1');
+                rankingResult = JSON.parse(fixed);
+                console.log("Fixed JSON by removing trailing commas");
+            } catch (e2) {
+                throw new Error(`JSON Parse Error: ${e.message}`);
+            }
         }
 
         // Merge original details back into ranked list so UI has full data (title, individual scores)

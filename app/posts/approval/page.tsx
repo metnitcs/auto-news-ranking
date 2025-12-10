@@ -187,6 +187,7 @@ export default function PostApprovalPage() {
                       id: post.id,
                       type: post.type,
                       content: post.content,
+                      image_url: post.image_url,
                       scheduled_at: post.scheduled_at
                     }}
                   />
