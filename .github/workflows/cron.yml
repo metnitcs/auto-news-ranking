@@ -49,12 +49,14 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           echo "Executing Trending Loop..."
-          response=$(curl -s -w "\n%{http_code}" -X GET "${APP_URL}/api/cron/daily" -H "Authorization: Bearer ${CRON_SECRET}")
+          response=$(curl -L -s -w "\n%{http_code}" -X GET "${APP_URL}/api/cron/daily" -H "Authorization: Bearer ${CRON_SECRET}")
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
           echo "Response: $body"
           echo "HTTP Status: $http_code"
-          if [ "$http_code" -ne 200 ]; then
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "Success!"
+          else
             echo "Error: API returned status $http_code"
             exit 1
           fi
@@ -66,12 +68,14 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           echo "Executing Daily Top 5 Generation..."
-          response=$(curl -s -w "\n%{http_code}" -X GET "${APP_URL}/api/cron/generate-top5" -H "Authorization: Bearer ${CRON_SECRET}")
+          response=$(curl -L -s -w "\n%{http_code}" -X GET "${APP_URL}/api/cron/generate-top5" -H "Authorization: Bearer ${CRON_SECRET}")
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
           echo "Response: $body"
           echo "HTTP Status: $http_code"
-          if [ "$http_code" -ne 200 ]; then
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "Success!"
+          else
             echo "Error: API returned status $http_code"
             exit 1
           fi
