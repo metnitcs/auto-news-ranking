@@ -27,21 +27,21 @@ export async function GET(request: Request) {
         console.log(`[Daily Cron] Step: ${name}...`);
         try {
             const res = await fetch(`${baseUrl}${endpoint}`, { method: 'POST' });
+            const text = await res.text();
+
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                throw new Error(`Failed to parse JSON from ${endpoint} (Status: ${res.status}). Response: ${text.substring(0, 500)}`);
+            }
 
             if (!res.ok) {
-                const text = await res.text();
-                throw new Error(`HTTP ${res.status}: ${text.substring(0, 200)}...`);
+                throw new Error(`HTTP ${res.status} from ${endpoint}: ${JSON.stringify(data)}`);
             }
 
-            const contentType = res.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                const data = await res.json();
-                results.steps.push({ step: name, ...data });
-                return data;
-            } else {
-                const text = await res.text();
-                throw new Error(`Invalid Content-Type (${contentType}): ${text.substring(0, 200)}...`);
-            }
+            results.steps.push({ step: name, ...data });
+            return data;
         } catch (e) {
             console.error(`[Daily Cron] Step ${name} Failed:`, e);
             throw e;
