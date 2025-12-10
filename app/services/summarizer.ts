@@ -76,13 +76,12 @@ export async function runSummarizer() {
             const { error: saveError } = await supabase
                 .from('news_summary')
                 .insert({
-                    id: news.id, // One-to-one relationship
-                    original_title: news.title,
+                    id: news.id,
                     title_rewritten: summaryJson.title_rewritten || news.title,
-                    summary: summaryJson.summary,
-                    category: summaryJson.category,
-                    keywords: summaryJson.keywords || [],
-                    key_entities: summaryJson.key_entities || []
+                    // Mapped to 'entities' in schema
+                    entities: summaryJson.key_entities || [],
+                    // Schema has 'bullets' (jsonb), not 'summary' (text). Map summary to bullets as fallback.
+                    bullets: summaryJson.summary ? [summaryJson.summary] : []
                 });
 
             if (saveError) {
