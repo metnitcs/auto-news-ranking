@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
+import { runCrawler } from '@/services/crawler';
+import { runSummarizer } from '@/services/summarizer';
+import { runAnalyzer } from '@/services/analyzer';
+import { runRanker } from '@/services/ranker';
+import { runGenerator } from '@/services/generator';
 
-export const maxDuration = 60;
+export const maxDuration = 300; // 5 mins for full process
 
 export async function GET(request: Request) {
     // Security Check
@@ -9,39 +14,16 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Prefer APP_URL if set manually, fallback to VERCEL_URL
-    const baseUrl = process.env.APP_URL
-        ? process.env.APP_URL
-        : process.env.VERCEL_URL
-            ? `https://${process.env.VERCEL_URL}`
-            : 'http://localhost:3000';
-
-    console.log(`[Daily Cron] Base URL: ${baseUrl}`);
-
     const results: any = {
         timestamp: new Date().toISOString(),
         steps: []
     };
 
-    async function callStep(name: string, endpoint: string) {
+    async function runStep(name: string, fn: () => Promise<any>) {
         console.log(`[Daily Cron] Step: ${name}...`);
         try {
-            const res = await fetch(`${baseUrl}${endpoint}`, { method: 'POST' });
-            const text = await res.text();
-
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                throw new Error(`Failed to parse JSON from ${endpoint} (Status: ${res.status}). Response: ${text.substring(0, 500)}`);
-            }
-
-            if (!res.ok) {
-                throw new Error(`HTTP ${res.status} from ${endpoint}: ${JSON.stringify(data)}`);
-            }
-
+            const data = await fn();
             results.steps.push({ step: name, ...data });
-            return data;
         } catch (e) {
             console.error(`[Daily Cron] Step ${name} Failed:`, e);
             throw e;
@@ -50,19 +32,19 @@ export async function GET(request: Request) {
 
     try {
         // Step 1: Crawl
-        await callStep('crawl', '/api/crawl');
+        await runStep('crawl', runCrawler);
 
         // Step 2: Summarize
-        await callStep('summarize', '/api/process/summarize');
+        await runStep('summarize', runSummarizer);
 
         // Step 3: Analyze
-        await callStep('analyze', '/api/process/analyze');
+        await runStep('analyze', runAnalyzer);
 
         // Step 4: Ranking
-        await callStep('ranking', '/api/process/ranking');
+        await runStep('ranking', runRanker);
 
         // Step 5: Generate Posts
-        await callStep('generate', '/api/process/generate');
+        await runStep('generate', runGenerator);
 
         console.log('[Daily Cron] All steps completed!');
         return NextResponse.json({ success: true, ...results });
