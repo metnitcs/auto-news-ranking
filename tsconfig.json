@@ -19,7 +19,9 @@
     "incremental": true,
     "paths": {
       "@/*": [
-        "./src/*"
+        "./src/*",
+        "./app/*",
+        "./*"
       ]
     },
     "plugins": [
