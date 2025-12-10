@@ -90,15 +90,27 @@ export async function runRanker() {
             console.error("Clean JSON (first 1000 chars):", cleanJson.substring(0, 1000));
             console.error("Clean JSON (last 500 chars):", cleanJson.substring(Math.max(0, cleanJson.length - 500)));
             
-            // Try to fix common issues
+            // Aggressive JSON fixing
             try {
                 let fixed = cleanJson
+                    .replace(/\r\n/g, ' ')  // Remove CRLF
+                    .replace(/\n/g, ' ')  // Remove LF
+                    .replace(/\r/g, ' ')  // Remove CR
+                    .replace(/\t/g, ' ')  // Remove tabs
                     .replace(/,\s*([}\]])/g, '$1')  // Remove trailing commas
-                    .replace(/([^\\])"([^":,\]}\n]*?)"([^:,\]}])/g, '$1\'$2\'$3')  // Fix unescaped quotes in values
-                    .replace(/\n/g, ' ')  // Remove newlines
-                    .replace(/\r/g, '');  // Remove carriage returns
+                    .replace(/,\s*,/g, ',');  // Remove double commas
+                
+                // Fix reason field: remove problematic characters
+                fixed = fixed.replace(/"reason":\s*"([^"]*)"/g, (match, content) => {
+                    const cleaned = content
+                        .replace(/\\/g, '')  // Remove backslashes
+                        .replace(/"/g, "'")  // Replace quotes with single quotes
+                        .trim();
+                    return `"reason": "${cleaned}"`;
+                });
+                
                 rankingResult = JSON.parse(fixed);
-                console.log("Fixed JSON with sanitization");
+                console.log("Fixed JSON with aggressive sanitization");
             } catch (e2) {
                 throw new Error(`JSON Parse Error: ${e.message}`);
             }
