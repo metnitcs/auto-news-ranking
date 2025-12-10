@@ -156,32 +156,58 @@ export default function SettingsPage() {
     );
 
     return (
-        <section className="space-y-8 max-w-4xl mx-auto py-8">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-6">
+        <section className="space-y-8">
+            {/* Header */}
+            <div className="flex items-start justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-white">Source Settings</h2>
-                    <div className="flex gap-4">
-                        <p className="text-sm text-slate-400">Manage News Sources</p>
-                        <a href="/raw" className="text-sm text-indigo-400 hover:underline">🔎 View Raw Data</a>
+                    <h1 className="text-3xl font-bold tracking-tight text-white">Sources & AI Control</h1>
+                    <p className="mt-2 text-slate-400">Manage news sources and run AI processing pipeline</p>
+                </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid gap-4 md:grid-cols-2">
+                <button
+                    onClick={handleRunCrawler}
+                    disabled={actionLoading}
+                    className={`group relative overflow-hidden rounded-2xl border p-6 text-left transition-all ${actionLoading ? 'border-slate-700 bg-slate-800/50 cursor-not-allowed' : 'border-emerald-500/30 bg-gradient-to-br from-emerald-600/20 to-emerald-900/20 hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10'}`}
+                >
+                    <div className="relative z-10">
+                        <div className="mb-3 flex items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/20 text-2xl">
+                                🕷️
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-white">Run Crawler</h3>
+                                <p className="text-xs text-slate-400">Fetch latest news</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-slate-300">
+                            {actionLoading ? 'Crawling in progress...' : 'Pull news from Facebook Pages & RSS feeds'}
+                        </p>
                     </div>
-                </div>
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={handleRunCrawler}
-                        disabled={actionLoading}
-                        className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${actionLoading ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-500'}`}
-                    >
-                        {actionLoading ? 'Running...' : '⚡ Run Crawler Now'}
-                    </button>
-                    <button
-                        onClick={handleRunProcessing}
-                        disabled={actionLoading}
-                        className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${actionLoading ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-purple-600 text-white hover:bg-purple-500'}`}
-                    >
-                        {actionLoading ? 'Processing...' : '🧠 Run AI Loop'}
-                    </button>
-                    <a href="/" className="text-sm text-indigo-400 hover:text-indigo-300">&larr; Back to Dashboard</a>
-                </div>
+                </button>
+
+                <button
+                    onClick={handleRunProcessing}
+                    disabled={actionLoading}
+                    className={`group relative overflow-hidden rounded-2xl border p-6 text-left transition-all ${actionLoading ? 'border-slate-700 bg-slate-800/50 cursor-not-allowed' : 'border-purple-500/30 bg-gradient-to-br from-purple-600/20 to-purple-900/20 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10'}`}
+                >
+                    <div className="relative z-10">
+                        <div className="mb-3 flex items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/20 text-2xl">
+                                🧠
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-white">Run AI Pipeline</h3>
+                                <p className="text-xs text-slate-400">Full processing</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-slate-300">
+                            {actionLoading ? 'AI processing...' : 'Summarize → Analyze → Rank → Generate'}
+                        </p>
+                    </div>
+                </button>
             </div>
 
             {/* Processing Status Overlay */}
@@ -209,35 +235,54 @@ export default function SettingsPage() {
             )}
 
             {/* Quick Actions Panel */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 backdrop-blur-sm">
-                <h3 className="mb-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">🎯 Individual Steps (ประหยัด Token)</h3>
-                <div className="flex flex-wrap gap-2">
+            <div className="rounded-2xl border border-slate-800/50 bg-slate-900/30 p-6 backdrop-blur-sm">
+                <div className="mb-4 flex items-center gap-2">
+                    <span className="text-xl">🎯</span>
+                    <h3 className="text-lg font-semibold text-white">Individual Steps</h3>
+                    <span className="ml-auto rounded-full bg-blue-500/20 px-3 py-1 text-xs font-medium text-blue-400">
+                        Save Tokens
+                    </span>
+                </div>
+                <p className="mb-4 text-sm text-slate-400">
+                    Run specific steps without processing the entire pipeline
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
                     <button
                         onClick={() => handleSingleStep('ranking')}
                         disabled={actionLoading}
-                        className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${actionLoading ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
+                        className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-all ${actionLoading ? 'border-slate-700 bg-slate-800/50 cursor-not-allowed' : 'border-amber-500/30 bg-amber-500/10 hover:border-amber-500/50 hover:bg-amber-500/20'}`}
                     >
-                        🏆 Rank Only
+                        <span className="text-2xl">🏆</span>
+                        <div>
+                            <div className="font-medium text-white">Rank Only</div>
+                            <div className="text-xs text-slate-400">Calculate rankings</div>
+                        </div>
                     </button>
                     <button
                         onClick={() => handleSingleStep('generate')}
                         disabled={actionLoading}
-                        className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${actionLoading ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-pink-600 text-white hover:bg-pink-500'}`}
+                        className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-all ${actionLoading ? 'border-slate-700 bg-slate-800/50 cursor-not-allowed' : 'border-pink-500/30 bg-pink-500/10 hover:border-pink-500/50 hover:bg-pink-500/20'}`}
                     >
-                        ✍️ Generate Posts Only
+                        <span className="text-2xl">✍️</span>
+                        <div>
+                            <div className="font-medium text-white">Generate Posts</div>
+                            <div className="text-xs text-slate-400">Create drafts only</div>
+                        </div>
                     </button>
-                    <p className="w-full text-xs text-slate-500 mt-2">💡 ใช้ปุ่มเหล่านี้เมื่อต้องการรันแค่ขั้นตอนเดียว ไม่ต้องรันใหม่ทั้งหมด</p>
                 </div>
             </div>
 
             {/* Add New Form */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-sm">
-                <h3 className="mb-4 text-lg font-semibold text-slate-200">Add New Source</h3>
+            <div className="rounded-2xl border border-slate-800/50 bg-slate-900/30 p-6 backdrop-blur-sm">
+                <div className="mb-4 flex items-center gap-2">
+                    <span className="text-xl">➕</span>
+                    <h3 className="text-lg font-semibold text-white">Add New Source</h3>
+                </div>
                 <form onSubmit={handleAdd} className="grid gap-4 md:grid-cols-4 items-end">
                     <div>
-                        <label className="mb-1 block text-xs text-slate-500">Type</label>
+                        <label className="mb-2 block text-xs font-medium text-slate-400">Type</label>
                         <select
-                            className="w-full rounded bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-sm text-white transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                             value={newItem.type}
                             onChange={e => setNewItem({ ...newItem, type: e.target.value as any })}
                         >
@@ -246,27 +291,27 @@ export default function SettingsPage() {
                         </select>
                     </div>
                     <div>
-                        <label className="mb-1 block text-xs text-slate-500">Name (Display)</label>
+                        <label className="mb-2 block text-xs font-medium text-slate-400">Name</label>
                         <input
                             type="text"
-                            className="w-full rounded bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-sm text-white transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                             placeholder="e.g. ThaiPBS"
                             value={newItem.name}
                             onChange={e => setNewItem({ ...newItem, name: e.target.value })}
                         />
                     </div>
                     <div>
-                        <label className="mb-1 block text-xs text-slate-500">Source ID / URL</label>
+                        <label className="mb-2 block text-xs font-medium text-slate-400">Source URL</label>
                         <input
                             type="text"
-                            className="w-full rounded bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            placeholder={newItem.type === 'rss' ? 'https://...' : 'Page ID'}
+                            className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-sm text-white transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                            placeholder={newItem.type === 'rss' ? 'https://...' : 'https://facebook.com/...'}
                             value={newItem.source_id}
                             onChange={e => setNewItem({ ...newItem, source_id: e.target.value })}
                         />
                     </div>
                     <div>
-                        <button type="submit" className="w-full rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+                        <button type="submit" className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500">
                             + Add Source
                         </button>
                     </div>
@@ -274,29 +319,45 @@ export default function SettingsPage() {
             </div>
 
             {/* List */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-1 backdrop-blur-sm">
-                <div className="p-4">
-                    <h3 className="mb-4 text-lg font-semibold text-slate-200">Active Sources</h3>
-                    {errorMsg && <div className="mb-4 rounded bg-red-900/50 p-3 text-sm text-red-200">Error: {errorMsg}</div>}
+            <div className="rounded-2xl border border-slate-800/50 bg-slate-900/30 p-6 backdrop-blur-sm">
+                <div className="mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xl">📚</span>
+                        <h3 className="text-lg font-semibold text-white">Active Sources</h3>
+                    </div>
+                    <span className="text-sm text-slate-500">{sources.length} sources</span>
+                </div>
+                <div>
+                    {errorMsg && <div className="mb-4 rounded-lg border border-red-500/30 bg-red-900/20 p-3 text-sm text-red-300">Error: {errorMsg}</div>}
                     {loading ? (
                         <p className="text-slate-500">Loading...</p>
                     ) : (
-                        <div className="space-y-2">
-                            {sources.length === 0 && <p className="text-slate-500">No sources configured.</p>}
+                        <div className="space-y-3">
+                            {sources.length === 0 && (
+                                <div className="rounded-xl border border-dashed border-slate-700/50 bg-slate-900/20 p-8 text-center">
+                                    <div className="text-4xl mb-3">📦</div>
+                                    <p className="text-sm text-slate-500">No sources configured yet</p>
+                                </div>
+                            )}
                             {sources.map(source => (
-                                <div key={source.id} className="flex items-center justify-between rounded bg-slate-900/50 p-3 hover:bg-slate-800/50">
-                                    <div className="flex items-center gap-3">
-                                        <span className={`px-2 py-0.5 rounded text-xs uppercase font-bold ${source.type === 'rss' ? 'bg-orange-900/30 text-orange-400' : 'bg-blue-900/30 text-blue-400'}`}>
-                                            {source.type === 'facebook_page' ? 'FB Limit' : 'RSS'}
-                                        </span>
+                                <div key={source.id} className="group flex items-center justify-between rounded-xl border border-slate-800/50 bg-slate-800/30 p-4 transition-all hover:border-slate-700 hover:bg-slate-800/50">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg text-lg ${source.type === 'rss' ? 'bg-orange-500/20 text-orange-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                            {source.type === 'facebook_page' ? '👥' : '📡'}
+                                        </div>
                                         <div>
-                                            <div className="font-medium text-slate-200">{source.name}</div>
-                                            <div className="text-xs text-slate-500 truncate max-w-md">{source.source_id}</div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-medium text-white">{source.name}</span>
+                                                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${source.type === 'rss' ? 'bg-orange-500/20 text-orange-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                                    {source.type === 'facebook_page' ? 'Facebook' : 'RSS'}
+                                                </span>
+                                            </div>
+                                            <div className="mt-1 max-w-md truncate text-xs text-slate-500">{source.source_id}</div>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => handleDelete(source.id)}
-                                        className="text-xs text-red-400 hover:text-red-300 hover:underline"
+                                        className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-400 opacity-0 transition-all hover:bg-red-500/10 group-hover:opacity-100"
                                     >
                                         Remove
                                     </button>

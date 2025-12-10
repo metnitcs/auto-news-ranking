@@ -19,13 +19,14 @@ interface RankingListProps {
 }
 
 export const RankingList: React.FC<RankingListProps> = ({ items: initialItems }) => {
-    // We use props directly for rendering to ensure router.refresh() updates the list.
-    // Local state is only needed for optimistic updates if desired, 
-    // but here we can just rely on props + loading state for simplicity or use both.
-    // Let's use local state for immediate feedback + router.refresh for persistence sync.
     const [items, setItems] = useState(initialItems);
     const [loading, setLoading] = useState<string | null>(null);
+    const [showAll, setShowAll] = useState(false);
     const router = useRouter();
+    
+    const displayLimit = 10;
+    const displayItems = showAll ? items : items.slice(0, displayLimit);
+    const hasMore = items.length > displayLimit;
 
     // Sync local state when props change (after router.refresh)
     React.useEffect(() => {
@@ -96,12 +97,27 @@ export const RankingList: React.FC<RankingListProps> = ({ items: initialItems })
 
     return (
         <div className="flex flex-col space-y-3">
-            <h3 className="mb-2 text-lg font-semibold text-slate-200">🏆 Daily Top 5</h3>
+            <div className="mb-2 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-200">🏆 Today's Rankings</h3>
+                {hasMore && (
+                    <button
+                        onClick={() => setShowAll(!showAll)}
+                        className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                    >
+                        {showAll ? 'Show Less' : `View All (${items.length})`}
+                    </button>
+                )}
+            </div>
 
             {!items || items.length === 0 ? (
-                <p className="text-sm text-slate-500">No ranking data available for today.</p>
+                <div className="rounded-xl border border-dashed border-slate-700/50 bg-slate-900/20 p-8 text-center">
+                    <div className="text-4xl mb-3">📅</div>
+                    <p className="text-sm text-slate-400">No ranking data available</p>
+                    <p className="mt-1 text-xs text-slate-600">Run AI processing to generate rankings</p>
+                </div>
             ) : (
-                items.map((item, index) => (
+                <>
+                    {displayItems.map((item, index) => (
                     <div
                         key={item.id}
                         className={`group relative flex items-start gap-4 rounded-lg border border-slate-800 bg-slate-900/40 p-3 transition-all hover:border-slate-700 hover:bg-slate-900/80 ${loading === item.id ? 'opacity-50' : ''}`}
@@ -150,7 +166,17 @@ export const RankingList: React.FC<RankingListProps> = ({ items: initialItems })
                             🗑️
                         </button>
                     </div>
-                ))
+                    ))}
+                    
+                    {hasMore && !showAll && (
+                        <button
+                            onClick={() => setShowAll(true)}
+                            className="w-full rounded-lg border border-slate-700/50 bg-slate-800/30 py-3 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-slate-300"
+                        >
+                            Show {items.length - displayLimit} More Rankings
+                        </button>
+                    )}
+                </>
             )}
         </div>
     );

@@ -63,54 +63,90 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <section className="space-y-6">
-      <div className="flex items-center justify-between">
+    <section className="space-y-8">
+      {/* Header */}
+      <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-white">Dashboard</h2>
-          <div className="flex items-center gap-4 text-sm text-slate-400">
-            <p>Real-time overview of Auto News system.</p>
-            <span className="text-slate-600">|</span>
-            <a href="/settings" className="text-indigo-400 hover:text-indigo-300 hover:underline">Manage Sources &rarr;</a>
-          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
+          <p className="mt-2 text-slate-400">Real-time overview of your AI news ranking system</p>
         </div>
-        <div className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-slate-300">
-          📅 Today: {todayDate}
+        <div className="flex items-center gap-2 rounded-xl border border-slate-700/50 bg-slate-800/50 px-4 py-2.5 backdrop-blur-sm">
+          <span className="text-lg">📅</span>
+          <div className="text-sm">
+            <div className="font-medium text-white">{todayDate}</div>
+            <div className="text-xs text-slate-500">Today</div>
+          </div>
         </div>
       </div>
 
       {/* Stats Row */}
       <DashboardStats {...stats} />
 
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* Left Column: Ranking List (7 cols) */}
-        <div className="space-y-4 lg:col-span-7">
-          <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/40 p-1 backdrop-blur-sm">
-            <div className="p-4">
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left Column: Ranking List (2 cols) */}
+        <div className="space-y-4 lg:col-span-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-white">Today's Rankings</h2>
+            <span className="text-sm text-slate-500">{ranking.length} items</span>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-slate-800/50 bg-slate-900/30 backdrop-blur-sm">
+            <div className="p-6">
               <RankingList items={ranking} />
             </div>
           </div>
         </div>
 
-        {/* Right Column: Post Review (5 cols) */}
-        <div className="space-y-4 lg:col-span-5">
-          <h3 className="text-lg font-semibold text-slate-200">Pending Review ({postsForReview.length})</h3>
+        {/* Right Column: Post Review (1 col) */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-white">Pending Posts</h2>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/20 text-xs font-bold text-amber-400">
+              {postsForReview.length}
+            </span>
+          </div>
 
           {/* Show all pending posts */}
           {postsForReview.length === 0 ? (
-            <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-6 text-center text-slate-500">
-              No posts pending review
+            <div className="rounded-2xl border border-dashed border-slate-700/50 bg-slate-900/20 p-8 text-center">
+              <div className="text-4xl mb-3">✅</div>
+              <p className="text-sm text-slate-500">No posts pending review</p>
             </div>
           ) : (
-            postsForReview.map(post => (
-              <InteractivePostReview key={post.id} post={post} />
-            ))
+            <div className="space-y-3">
+              {postsForReview.map(post => (
+                <InteractivePostReview key={post.id} post={post} />
+              ))}
+            </div>
           )}
 
-          <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-4">
-            <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">System Logs</h4>
-            <div className="space-y-2 text-xs text-slate-400 font-mono">
-              <div className="flex justify-between"><span>System Ready</span><span className="text-green-500">ONLINE</span></div>
-              <div className="flex justify-between"><span>DB Connection</span><span className="text-green-500">OK</span></div>
+          {/* System Status Card */}
+          <div className="rounded-2xl border border-slate-800/50 bg-gradient-to-br from-slate-900/50 to-slate-800/30 p-5 backdrop-blur-sm">
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-300">
+              <span className="text-base">⚡</span>
+              System Status
+            </h3>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-400">AI Engine</span>
+                <span className="flex items-center gap-1.5 text-green-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-400"></span>
+                  Ready
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-400">Database</span>
+                <span className="flex items-center gap-1.5 text-green-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-400"></span>
+                  Connected
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-400">Crawler</span>
+                <span className="flex items-center gap-1.5 text-blue-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-400"></span>
+                  Idle
+                </span>
+              </div>
             </div>
           </div>
         </div>
