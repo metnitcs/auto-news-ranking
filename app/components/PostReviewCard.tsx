@@ -55,11 +55,11 @@ export const PostReviewCard: React.FC<PostReviewCardProps> = ({ post, loading, o
     };
 
     return (
-        <div className={`rounded-xl border border-indigo-500/30 bg-slate-900/60 p-4 shadow-lg shadow-indigo-900/10 backdrop-blur-md ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
-            <div className="mb-4 flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className={`rounded-xl border border-indigo-500/30 bg-slate-900/60 p-3 shadow-lg shadow-indigo-900/10 backdrop-blur-md ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className="mb-3 flex items-center justify-between border-b border-slate-800 pb-2">
                 <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
-                    <h3 className="text-sm font-semibold text-indigo-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                    <h3 className="text-xs font-semibold text-indigo-400">
                         {isEditing ? 'EDITING' : 'WAITING FOR APPROVAL'}
                     </h3>
                 </div>
@@ -69,15 +69,7 @@ export const PostReviewCard: React.FC<PostReviewCardProps> = ({ post, loading, o
             </div>
 
             {/* Content Area */}
-            <div className="mb-4 rounded-lg bg-slate-950 p-4 text-sm leading-relaxed text-slate-300">
-                <div className="mb-3 flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">📰</div>
-                    <div>
-                        <div className="text-sm font-medium text-white">News Ranking Page</div>
-                        <div className="text-xs text-slate-500">Just now · 🌐</div>
-                    </div>
-                </div>
-
+            <div className="mb-3 rounded-lg bg-slate-950 p-3 text-sm leading-relaxed text-slate-300">
                 {isEditing ? (
                     <textarea
                         value={editedContent}
@@ -87,11 +79,11 @@ export const PostReviewCard: React.FC<PostReviewCardProps> = ({ post, loading, o
                     />
                 ) : (
                     <>
-                        <div className="whitespace-pre-wrap font-sans max-h-48 overflow-y-auto">
+                        <div className="whitespace-pre-wrap font-sans text-xs max-h-32 overflow-y-auto">
                             {cleanContent}
                         </div>
                         {post.image_url && (
-                            <img src={post.image_url} alt="Post infographic" className="mt-3 rounded-lg w-full" />
+                            <img src={post.image_url} alt="Post infographic" className="mt-2 rounded-lg w-full" />
                         )}
                     </>
                 )}

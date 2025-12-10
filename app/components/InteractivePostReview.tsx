@@ -15,9 +15,11 @@ interface PostDraft {
 
 interface InteractivePostReviewProps {
     post: PostDraft | null;
+    onRefresh?: () => void;
 }
 
-export const InteractivePostReview: React.FC<InteractivePostReviewProps> = ({ post }) => {
+export const InteractivePostReview: React.FC<InteractivePostReviewProps> = ({ post, onRefresh }) => {
+    const fetchData = onRefresh || (() => {});
     const [hidden, setHidden] = useState(false);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -72,6 +74,7 @@ export const InteractivePostReview: React.FC<InteractivePostReviewProps> = ({ po
 
             if (data.success) {
                 setHidden(true);
+                await fetchData(); // Refresh all data including counters
                 router.refresh(); // Refresh server state
 
                 if (action === 'publish') {

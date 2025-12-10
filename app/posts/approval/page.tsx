@@ -190,6 +190,7 @@ export default function PostApprovalPage() {
                       image_url: post.image_url,
                       scheduled_at: post.scheduled_at
                     }}
+                    onRefresh={fetchData}
                   />
                 ))
               )}

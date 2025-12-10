@@ -118,11 +118,6 @@ export async function generateInfographic(type: 'daily_top5' | 'trending_now', d
                                 <div style={{ display: 'flex', fontSize: '24px', fontWeight: 'bold', lineHeight: 1.4 }}>
                                     {item.title}
                                 </div>
-                                {item.insight && (
-                                    <div style={{ display: 'flex', fontSize: '17px', opacity: 0.9, marginTop: '8px', lineHeight: 1.5 }}>
-                                        {item.insight.substring(0, 90)}...
-                                    </div>
-                                )}
                             </div>
                         </div>
                     ))}

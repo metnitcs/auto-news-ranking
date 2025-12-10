@@ -15,7 +15,7 @@ async function getDashboardData() {
   const { count: analyzedCount } = await supabase.from('news_analysis').select('*', { count: 'exact', head: true });
   const { count: postCount } = await supabase.from('generated_posts').select('*', { count: 'exact', head: true }).eq('status', 'draft');
 
-  // 2. Fetch Today's Ranking
+  // 2. Fetch Today's Ranking (limit to 10 for initial load)
   const { data: ranking } = await supabase
     .from('news_ranking_daily')
     .select('*')
@@ -25,10 +25,7 @@ async function getDashboardData() {
   // 3. Reconstruct Ranking List from IDs if ranking exists
   let rankingList = [];
   if (ranking && ranking.ranked_list) {
-    rankingList = ranking.ranked_list; // Assuming ranked_list structure matches RankingItem roughly or we map it
-    // If ranked_list is just IDs or basic info, we might need to fetch join. 
-    // PRD says: ranked_list IS jsonb. Let's assume it stores enough info for display.
-    // If it stores full objects as planned in prompt engine, we are good.
+    rankingList = ranking.ranked_list.slice(0, 10);
   }
 
   // 4. Fetch ALL Pending Posts
@@ -59,6 +56,7 @@ export default async function DashboardPage() {
     id: post.id,
     type: post.type,
     content: post.content,
+    image_url: post.image_url,
     scheduled_at: post.scheduled_at
   }));
 
