@@ -1,7 +1,13 @@
 "use client";
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { createBrowserClient } from '@supabase/ssr';
+
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 const navItems = [
   { 
@@ -32,6 +38,12 @@ const navItems = [
 
 export function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/login';
+  };
 
   return (
     <aside className="w-72 border-r border-slate-800/50 bg-slate-900/30 backdrop-blur-xl">
@@ -103,6 +115,14 @@ export function Navigation() {
               </div>
             </div>
           </div>
+          
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="mt-3 w-full rounded-lg border border-slate-700/50 bg-slate-800/30 px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-white"
+          >
+            🚪 Sign Out
+          </button>
         </div>
       </div>
     </aside>
