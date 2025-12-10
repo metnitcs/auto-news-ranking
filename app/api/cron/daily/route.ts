@@ -44,7 +44,8 @@ export async function GET(request: Request) {
         await runStep('ranking', runRanker);
 
         // Step 5: Generate Posts
-        await runStep('generate', runGenerator);
+        // Step 5: Generate Posts (Trending Only)
+        await runStep('generate', () => runGenerator(['trending_now']));
 
         console.log('[Daily Cron] All steps completed!');
         return NextResponse.json({ success: true, ...results });

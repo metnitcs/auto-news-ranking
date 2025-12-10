@@ -1,34 +1,67 @@
 name: Auto News Cron
 on:
   schedule:
-    # ทุก 4 ชม. (01:00, 05:00, 09:00, 13:00, 17:00, 21:00 UTC)
-    - cron: '0 1,5,9,13,17,21 * * *'
-  workflow_dispatch: # รันมือได้จาก GitHub UI
+    # Trending: 06, 12, 15, 18, 20 TH (23, 05, 08, 11, 13 UTC)
+    - cron: '0 23,5,8,11,13 * * *'
+    # Top 5: 20:30 TH (13:30 UTC)
+    - cron: '30 13 * * *'
+  workflow_dispatch: 
 
 jobs:
-  crawl-and-process:
+  # Job 1: Daily Process & Trending Generation (Every specified hour)
+  daily-process-trending:
     runs-on: ubuntu-latest
+    if: github.event.schedule != '30 13 * * *' # Skip if it's the Top 5 slot (though cron syntax triggers separate workflows, this logic helps if overlapping or manual)
+    # Actually, GitHub Actions triggers separately for each cron line. 
+    # But usually it's cleaner to have separate logic or just let them run.
+    # Since we want DISTINCT actions for distinct times, we can use conditional steps or just run the 'Daily' script which now ONLY generates Trending.
+    # The cron string '0 23,5,8,11,13 * * *' triggers this workflow.
+    # The cron string '30 13 * * *' ALSO triggers this workflow.
+    # We need to distinguish WHICH schedule triggered it, OR create separate workflow files.
+    # Easier in one file: Check the schedule time or use separate jobs.
+    # GitHub doesn't easily expose "which cron string triggered me".
+    # Strategy: Run different scripts based on current time? 
+    # OR: Create two separate workflow files? (Cleanest, but user might want one file).
+    # Let's try to infer from time or just separate jobs if possible?
+    # No, single workflow file with multiple crons runs the WHOLE workflow.
+    # BETTER STRATEGY given constraints:
+    # Use ONE job that decides what to call based on time, OR call BOTH endpoints but control logic inside?
+    # No, we want to save tokens.
+    # Best Approach: Split into 2 files? NO, user gave me one file.
+    # Alternative: Use Javascript or Shell in the step to check time and call appropriate URL.
+    
     steps:
-      - name: Trigger Daily Cron API
+      - name: Determine Job Type
+        id: job-type
+        run: |
+          hour=$(date -u +%H)
+          minute=$(date -u +%M)
+          echo "Current time (UTC): $hour:$minute"
+          
+          # Logic: If it's around 13:30 UTC, run Top 5. Else run Trending.
+          # Allow some buffer for startup time.
+          if [ "$hour" -eq 13 ] && [ "$minute" -ge 20 ]; then
+             echo "type=top5" >> $GITHUB_OUTPUT
+             echo "Detected Top 5 Schedule"
+          else
+             echo "type=trending" >> $GITHUB_OUTPUT
+             echo "Detected Trending Schedule"
+          fi
+
+      - name: Trigger Trending/Daily Process
+        if: steps.job-type.outputs.type == 'trending'
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          echo "Starting cron job at $(date)"
-          
-          response=$(curl -s -L -w "\n%{http_code}" \
-            -X GET "${APP_URL}/api/cron/daily" \
-            -H "Authorization: Bearer ${CRON_SECRET}")
-          
-          http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | sed '$d')
-          
-          echo "Response: $body"
-          echo "HTTP Code: $http_code"
-          
-          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
-            echo "✅ Cron job completed successfully"
-          else
-            echo "❌ Cron job failed with HTTP $http_code"
-            exit 1
-          fi
+          echo "Executing Trending Loop..."
+          curl -s -X GET "${APP_URL}/api/cron/daily" -H "Authorization: Bearer ${CRON_SECRET}"
+
+      - name: Trigger Top 5 Generation
+        if: steps.job-type.outputs.type == 'top5'
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "Executing Daily Top 5 Generation..."
+          curl -s -X GET "${APP_URL}/api/cron/generate-top5" -H "Authorization: Bearer ${CRON_SECRET}"

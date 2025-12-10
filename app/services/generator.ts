@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { getPrompt } from '@/lib/promptEngine';
 import { callLLM } from '@/lib/llm';
 
-export async function runGenerator() {
+export async function runGenerator(variants: string[] = ['daily_top5', 'trending_now']) {
     try {
         const todayStr = new Date().toISOString().split('T')[0];
 
@@ -18,7 +18,7 @@ export async function runGenerator() {
         }
 
         const stats = { created: 0, errors: 0 };
-        const variants = ['daily_top5', 'trending_now']; // Removed: hidden_news
+        // const variants = ['daily_top5', 'trending_now']; // Use argument instead
 
         for (const variant of variants) {
             try {
