@@ -9,45 +9,60 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : 'http://localhost:3000';
+    // Prefer APP_URL if set manually, fallback to VERCEL_URL
+    const baseUrl = process.env.APP_URL
+        ? process.env.APP_URL
+        : process.env.VERCEL_URL
+            ? `https://${process.env.VERCEL_URL}`
+            : 'http://localhost:3000';
+
+    console.log(`[Daily Cron] Base URL: ${baseUrl}`);
 
     const results: any = {
         timestamp: new Date().toISOString(),
         steps: []
     };
 
+    async function callStep(name: string, endpoint: string) {
+        console.log(`[Daily Cron] Step: ${name}...`);
+        try {
+            const res = await fetch(`${baseUrl}${endpoint}`, { method: 'POST' });
+
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`HTTP ${res.status}: ${text.substring(0, 200)}...`);
+            }
+
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                const data = await res.json();
+                results.steps.push({ step: name, ...data });
+                return data;
+            } else {
+                const text = await res.text();
+                throw new Error(`Invalid Content-Type (${contentType}): ${text.substring(0, 200)}...`);
+            }
+        } catch (e) {
+            console.error(`[Daily Cron] Step ${name} Failed:`, e);
+            throw e;
+        }
+    }
+
     try {
         // Step 1: Crawl
-        console.log('[Daily Cron] Step 1: Crawling...');
-        const crawlRes = await fetch(`${baseUrl}/api/crawl`, { method: 'POST' });
-        const crawlData = await crawlRes.json();
-        results.steps.push({ step: 'crawl', ...crawlData });
+        await callStep('crawl', '/api/crawl');
 
         // Step 2: Summarize
-        console.log('[Daily Cron] Step 2: Summarizing...');
-        const sumRes = await fetch(`${baseUrl}/api/process/summarize`, { method: 'POST' });
-        const sumData = await sumRes.json();
-        results.steps.push({ step: 'summarize', ...sumData });
+        await callStep('summarize', '/api/process/summarize');
 
         // Step 3: Analyze
-        console.log('[Daily Cron] Step 3: Analyzing...');
-        const anzRes = await fetch(`${baseUrl}/api/process/analyze`, { method: 'POST' });
-        const anzData = await anzRes.json();
-        results.steps.push({ step: 'analyze', ...anzData });
+        await callStep('analyze', '/api/process/analyze');
 
         // Step 4: Ranking
-        console.log('[Daily Cron] Step 4: Ranking...');
-        const rankRes = await fetch(`${baseUrl}/api/process/ranking`, { method: 'POST' });
-        const rankData = await rankRes.json();
-        results.steps.push({ step: 'ranking', ...rankData });
+        await callStep('ranking', '/api/process/ranking');
 
         // Step 5: Generate Posts
-        console.log('[Daily Cron] Step 5: Generating Posts...');
-        const genRes = await fetch(`${baseUrl}/api/process/generate`, { method: 'POST' });
-        const genData = await genRes.json();
-        results.steps.push({ step: 'generate', ...genData });
+        await callStep('generate', '/api/process/generate');
 
         console.log('[Daily Cron] All steps completed!');
         return NextResponse.json({ success: true, ...results });
