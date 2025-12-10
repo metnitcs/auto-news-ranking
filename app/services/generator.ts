@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { getPrompt } from '@/lib/promptEngine';
 import { callLLM } from '@/lib/llm';
+import { generateInfographic } from './imageGenerator';
 
 export async function runGenerator(variants: string[] = ['daily_top5', 'trending_now']) {
     try {
@@ -18,44 +19,45 @@ export async function runGenerator(variants: string[] = ['daily_top5', 'trending
         }
 
         const stats = { created: 0, errors: 0 };
-        // const variants = ['daily_top5', 'trending_now']; // Use argument instead
 
         for (const variant of variants) {
             try {
                 // 2. Prepare Data for Prompt
                 let contextData = {};
                 let newsIds = [];
+                let listDetails: any[] = [];
 
                 if (variant === 'daily_top5') {
                     if (!ranking.top5 || ranking.top5.length === 0) continue;
-                    // Filter enriched list for top 5
-                    const top5Details = ranking.ranked_list.filter((r: any) => ranking.top5.includes(r.id));
-                    contextData = { ranked_news_detail_json: JSON.stringify(top5Details, null, 2) };
+                    listDetails = ranking.ranked_list.filter((r: any) => ranking.top5.includes(r.id));
+                    contextData = { ranked_news_detail_json: JSON.stringify(listDetails, null, 2) };
                     newsIds = ranking.top5;
                 }
                 else if (variant === 'trending_now') {
                     if (!ranking.trending || ranking.trending.length === 0) continue;
-                    const trendingDetails = ranking.ranked_list.filter((r: any) => ranking.trending.includes(r.id));
-                    contextData = { trending_news_detail_json: JSON.stringify(trendingDetails, null, 2) };
+                    listDetails = ranking.ranked_list.filter((r: any) => ranking.trending.includes(r.id));
+                    contextData = { trending_news_detail_json: JSON.stringify(listDetails, null, 2) };
                     newsIds = ranking.trending;
                 }
-                else if (variant === 'hidden_news') {
-                    if (!ranking.hidden_gems || ranking.hidden_gems.length === 0) continue;
-                    const hiddenDetails = ranking.ranked_list.filter((r: any) => ranking.hidden_gems.includes(r.id));
-                    contextData = { hidden_news_detail_json: JSON.stringify(hiddenDetails, null, 2) };
-                    newsIds = ranking.hidden_gems;
-                }
 
-                // 3. Generate Post
+                // 3. Generate Post (Text)
                 const promptConfig = getPrompt('post_generator', contextData, variant);
                 const postContent = await callLLM(promptConfig);
 
+                // 3.5 Generate Infographic (Image)
+                let imageUrl = null;
+                if ((variant === 'daily_top5' || variant === 'trending_now') && listDetails.length > 0) {
+                    imageUrl = await generateInfographic(variant as any, listDetails);
+                }
+
                 // 4. Save to DB
+                // Ensure image_url column exists in Supabase first!
                 const { error: insertError } = await supabase
                     .from('generated_posts')
                     .insert({
                         type: variant,
                         content: postContent,
+                        image_url: imageUrl,
                         status: 'draft'
                     });
 

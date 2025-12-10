@@ -54,6 +54,7 @@ create table public.generated_posts (
   type varchar(50) not null, -- 'top5', 'trending', 'hidden_gems'
   payload jsonb, -- Data used to generate the post
   content text, -- Final post content (Draft/Approved)
+  image_url text, -- URL of the generated infographic
   status varchar(20) default 'draft' check (status in ('draft', 'approved', 'scheduled', 'posted', 'failed')),
   scheduled_at timestamptz,
   posted_at timestamptz,
