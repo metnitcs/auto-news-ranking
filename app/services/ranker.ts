@@ -47,17 +47,27 @@ export async function runRanker() {
             summaries.forEach((s: any) => summaryMap.set(s.id, s.title_rewritten));
         }
 
+        // Sanitize function to remove problematic characters
+        const sanitize = (text: string) => {
+            if (!text) return '';
+            return text
+                .replace(/["\\]/g, '')  // Remove quotes and backslashes
+                .replace(/[\r\n\t]/g, ' ')  // Remove newlines and tabs
+                .replace(/\s+/g, ' ')  // Normalize spaces
+                .trim();
+        };
+
         // Limit to prevent context overflow if too many (though Gemini handles a lot)
         // Let's cap at 100 items for safety/cost
         const itemsToRank = analyzedNews.slice(0, 100).map(item => ({
             id: item.id,
-            title: summaryMap.get(item.id) || "Untitled News",
+            title: sanitize(summaryMap.get(item.id) || "Untitled News"),
             scores: {
                 importance: item.importance_score,
                 impact: item.impact_score,
                 trend: item.social_trend_score
             },
-            insight: item.insight
+            insight: sanitize(item.insight || '')
         }));
 
         // 2. Call Ranker AI
@@ -90,28 +100,36 @@ export async function runRanker() {
             console.error("Clean JSON (first 1000 chars):", cleanJson.substring(0, 1000));
             console.error("Clean JSON (last 500 chars):", cleanJson.substring(Math.max(0, cleanJson.length - 500)));
             
-            // Aggressive JSON fixing
+            // Ultra-aggressive JSON fixing
             try {
-                let fixed = cleanJson
-                    .replace(/\r\n/g, ' ')  // Remove CRLF
-                    .replace(/\n/g, ' ')  // Remove LF
-                    .replace(/\r/g, ' ')  // Remove CR
-                    .replace(/\t/g, ' ')  // Remove tabs
-                    .replace(/,\s*([}\]])/g, '$1')  // Remove trailing commas
-                    .replace(/,\s*,/g, ',');  // Remove double commas
+                let fixed = cleanJson;
                 
-                // Fix reason field: remove problematic characters
-                fixed = fixed.replace(/"reason":\s*"([^"]*)"/g, (match, content) => {
+                // Step 1: Remove all newlines and tabs
+                fixed = fixed.replace(/[\r\n\t]/g, ' ');
+                
+                // Step 2: Fix reason field specifically - extract and clean
+                fixed = fixed.replace(/"reason"\s*:\s*"((?:[^"\\]|\\.)*)"(?=[,}])/g, (match, content) => {
+                    // Remove all backslashes and quotes, keep only safe characters
                     const cleaned = content
                         .replace(/\\/g, '')  // Remove backslashes
-                        .replace(/"/g, "'")  // Replace quotes with single quotes
+                        .replace(/"/g, '')   // Remove quotes
+                        .replace(/[\r\n\t]/g, ' ')  // Remove newlines
+                        .replace(/\s+/g, ' ')  // Normalize spaces
                         .trim();
-                    return `"reason": "${cleaned}"`;
+                    return `"reason":"${cleaned}"`;
                 });
                 
+                // Step 3: Clean up commas
+                fixed = fixed.replace(/,\s*([}\]])/g, '$1');  // Remove trailing commas
+                fixed = fixed.replace(/,\s*,+/g, ',');  // Remove double commas
+                
+                // Step 4: Normalize whitespace
+                fixed = fixed.replace(/\s+/g, ' ');
+                
                 rankingResult = JSON.parse(fixed);
-                console.log("Fixed JSON with aggressive sanitization");
-            } catch (e2) {
+                console.log("Fixed JSON with ultra-aggressive sanitization");
+            } catch (e2: any) {
+                console.error("Still failed after sanitization:", e2.message);
                 throw new Error(`JSON Parse Error: ${e.message}`);
             }
         }
