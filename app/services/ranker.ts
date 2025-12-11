@@ -107,15 +107,18 @@ export async function runRanker() {
                 // Step 1: Remove all newlines and tabs
                 fixed = fixed.replace(/[\r\n\t]/g, ' ');
                 
-                // Step 2: Fix reason field specifically - extract and clean
-                fixed = fixed.replace(/"reason"\s*:\s*"((?:[^"\\]|\\.)*)"(?=[,}])/g, (match, content) => {
-                    // Remove all backslashes and quotes, keep only safe characters
+                // Step 2: Fix reason field - remove everything problematic
+                fixed = fixed.replace(/"reason"\s*:\s*"[^"]*"/g, (match) => {
+                    // Extract content between quotes
+                    const content = match.match(/"reason"\s*:\s*"(.*)"$/)?.[1] || '';
+                    // Keep only safe characters: Thai, English, numbers, basic punctuation
                     const cleaned = content
-                        .replace(/\\/g, '')  // Remove backslashes
-                        .replace(/"/g, '')   // Remove quotes
-                        .replace(/[\r\n\t]/g, ' ')  // Remove newlines
+                        .replace(/["'`\\]/g, '')  // Remove quotes and backslashes
+                        .replace(/[\r\n\t\f\v]/g, ' ')  // Remove whitespace
+                        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')  // Remove control chars
                         .replace(/\s+/g, ' ')  // Normalize spaces
-                        .trim();
+                        .trim()
+                        .substring(0, 150);  // Limit length
                     return `"reason":"${cleaned}"`;
                 });
                 
