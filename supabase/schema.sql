@@ -1,6 +1,16 @@
 -- Enable UUID extension
 create extension if not exists "uuid-ossp";
 
+-- 0. tracked_sources
+create table public.tracked_sources (
+  id uuid primary key default uuid_generate_v4(),
+  type varchar(50) not null, -- 'rss', 'facebook_page'
+  name varchar(255) not null,
+  source_id text not null, -- URL or feed link
+  is_active boolean default true,
+  created_at timestamptz default now()
+);
+
 -- 1. news_raw
 create table public.news_raw (
   id uuid primary key default uuid_generate_v4(),
@@ -64,3 +74,5 @@ create table public.generated_posts (
 -- Create indexes for performance
 create index idx_news_raw_created_at on public.news_raw(created_at);
 create index idx_news_ranking_date on public.news_ranking_daily(rank_date);
+create index idx_generated_posts_status on public.generated_posts(status);
+create index idx_generated_posts_posted_at on public.generated_posts(posted_at);

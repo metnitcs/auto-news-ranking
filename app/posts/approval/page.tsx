@@ -19,6 +19,7 @@ export default function PostApprovalPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const itemsPerPage = 20;
 
   useEffect(() => {
@@ -109,6 +110,26 @@ export default function PostApprovalPage() {
     if (!error) {
       Swal.fire('Success', 'Post approved!', 'success');
       fetchData();
+    }
+  };
+
+  const handlePostToFacebook = async (postId: string) => {
+    try {
+      const response = await fetch('/api/posts/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: postId })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        Swal.fire('Success', 'Posted to Facebook!', 'success');
+        fetchData();
+      } else {
+        Swal.fire('Error', data.error || 'Failed to post', 'error');
+      }
+    } catch (error) {
+      Swal.fire('Error', 'Failed to post to Facebook', 'error');
     }
   };
 
@@ -242,8 +263,8 @@ export default function PostApprovalPage() {
               </tr>
             </thead>
             <tbody>
-              {paginatedData.map(post => (
-                <tr key={post.id} className="border-b border-slate-800/50 hover:bg-slate-800/20">
+              {paginatedData.map((post, idx) => (
+                <tr key={`post-${post.id}-${idx}`} className="border-b border-slate-800/50 hover:bg-slate-800/20">
                   <td className="px-6 py-4">
                     <input
                       type="checkbox"
@@ -257,7 +278,14 @@ export default function PostApprovalPage() {
                       {post.type === 'daily_top5' ? 'Top 5' : 'Trending'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-slate-300 max-w-xs truncate">{post.content?.substring(0, 50)}...</td>
+                  <td className="px-6 py-4 text-sm text-slate-300">
+                    <button
+                      onClick={() => setExpandedId(expandedId === post.id ? null : post.id)}
+                      className="inline-flex items-center gap-2 rounded-lg bg-slate-700/30 px-3 py-1 text-xs font-medium text-slate-300 hover:bg-slate-700/50"
+                    >
+                      {expandedId === post.id ? '📖 Hide' : '📖 Read'}
+                    </button>
+                  </td>
                   <td className="px-6 py-4 text-sm">
                     {post.image_url ? (
                       <button
@@ -291,7 +319,23 @@ export default function PostApprovalPage() {
                           </button>
                         </>
                       )}
-                      {(activeTab === 'approved' || activeTab === 'published') && (
+                      {activeTab === 'approved' && (
+                        <>
+                          <button
+                            onClick={() => handlePostToFacebook(post.id)}
+                            className="rounded-lg bg-blue-600/20 px-3 py-1 text-xs font-medium text-blue-400 hover:bg-blue-600/30"
+                          >
+                            📱 Post
+                          </button>
+                          <button
+                            onClick={() => handleDelete(post.id)}
+                            className="rounded-lg bg-red-600/20 px-3 py-1 text-xs font-medium text-red-400 hover:bg-red-600/30"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                      {activeTab === 'published' && (
                         <button
                           onClick={() => handleDelete(post.id)}
                           className="rounded-lg bg-red-600/20 px-3 py-1 text-xs font-medium text-red-400 hover:bg-red-600/30"
@@ -303,6 +347,40 @@ export default function PostApprovalPage() {
                   </td>
                 </tr>
               ))}
+              {paginatedData.map((post, idx) => 
+                expandedId === post.id ? (
+                  <tr key={`expanded-${post.id}-${idx}`} className="border-b border-slate-800/50 bg-slate-800/20">
+                    <td colSpan={6} className="px-6 py-4">
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="mb-2 text-sm font-semibold text-slate-300">📝 Full Content</h4>
+                          <p className="whitespace-pre-wrap rounded-lg bg-slate-900/50 p-4 text-sm text-slate-300 leading-relaxed">
+                            {post.content}
+                          </p>
+                        </div>
+                        {post.image_url && (
+                          <div>
+                            <h4 className="mb-2 text-sm font-semibold text-slate-300">🖼️ Image Preview</h4>
+                            <img
+                              src={post.image_url}
+                              alt="Post image"
+                              className="max-h-96 rounded-lg border border-slate-700/50 object-cover"
+                            />
+                          </div>
+                        )}
+                        {post.metadata && (
+                          <div>
+                            <h4 className="mb-2 text-sm font-semibold text-slate-300">📊 Metadata</h4>
+                            <pre className="overflow-x-auto rounded-lg bg-slate-900/50 p-4 text-xs text-slate-400">
+                              {JSON.stringify(post.metadata, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ) : null
+              )}
             </tbody>
           </table>
         )}

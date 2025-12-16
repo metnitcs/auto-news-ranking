@@ -122,7 +122,7 @@ export default function SettingsPage() {
         }
     };
 
-    const handleSingleStep = async (step: 'ranking' | 'generate') => {
+    const handleSingleStep = async (step: 'ranking' | 'generate' | 'auto-post') => {
         setActionLoading(true);
         setStatus('');
         try {
@@ -138,6 +138,12 @@ export default function SettingsPage() {
                 const data = await res.json();
                 if (!data.success) throw new Error(data.error || "Generate failed");
                 setStatus(`✅ Generated ${data.stats.created} drafts!`);
+            } else if (step === 'auto-post') {
+                setStatus("📤 Auto-Posting to Facebook...");
+                const res = await fetch('/api/posts/auto-post', { method: 'POST', body: JSON.stringify({ limit: 5 }) });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || "Auto-post failed");
+                setStatus(`✅ Posted ${data.posted} posts! (${data.failed} failed)`);
             }
         } catch (e: any) {
             setStatus(`❌ Error: ${e.message}`);
@@ -246,7 +252,7 @@ export default function SettingsPage() {
                 <p className="mb-4 text-sm text-slate-400">
                     Run specific steps without processing the entire pipeline
                 </p>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-3">
                     <button
                         onClick={() => handleSingleStep('ranking')}
                         disabled={actionLoading}
@@ -267,6 +273,17 @@ export default function SettingsPage() {
                         <div>
                             <div className="font-medium text-white">Generate Posts</div>
                             <div className="text-xs text-slate-400">Create drafts only</div>
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => handleSingleStep('auto-post')}
+                        disabled={actionLoading}
+                        className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-all ${actionLoading ? 'border-slate-700 bg-slate-800/50 cursor-not-allowed' : 'border-blue-500/30 bg-blue-500/10 hover:border-blue-500/50 hover:bg-blue-500/20'}`}
+                    >
+                        <span className="text-2xl">📤</span>
+                        <div>
+                            <div className="font-medium text-white">Auto-Post</div>
+                            <div className="text-xs text-slate-400">Post to Facebook</div>
                         </div>
                     </button>
                 </div>

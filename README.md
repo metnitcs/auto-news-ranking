@@ -17,11 +17,12 @@
 
 ### 📱 Social Media Management
 - 🚀 **Facebook Publisher** — โพสต์ไป Facebook Page ได้ทันที
+- 📤 **Auto-Post System** — โพสต์ approved posts โดยอัตโนมัติตามตารางเวลา
 - 📈 **Post Insights** — ติดตาม Likes, Comments, Shares แบบ Real-time
 - 🎨 **Auto Infographic** — สร้างภาพประกอบด้วย Satori + SVG
 
 ### ⚙️ Automation & Monitoring
-- ⏰ **GitHub Actions Scheduler** — รันอัตโนมัติทุก 4 ชม. (แยก Trending/Top5)
+- ⏰ **GitHub Actions Scheduler** — รันอัตโนมัติทุก 4 ชม. (แยก Trending/Top5/Auto-Post)
 - 🔄 **Rate Limit Handler** — Exponential Backoff สำหรับ Gemini API
 - 🛡️ **Security** — Bearer Token Authentication สำหรับ Cron
 
@@ -83,10 +84,14 @@ app/
 │   │   ├── analyze/     # AI Analyzer
 │   │   ├── ranking/     # Ranking Engine
 │   │   └── generate/    # Post Generator
-│   ├── cron/            # Daily Cron (Single Endpoint)
+│   ├── cron/
+│   │   ├── daily/       # Full pipeline
+│   │   ├── generate-top5/  # Top 5 only
+│   │   └── auto-post/   # Auto-post to Facebook
 │   └── posts/
 │       ├── action/      # Approve/Delete/Update
 │       ├── publish/     # Facebook Publisher
+│       ├── auto-post/   # Manual auto-post trigger
 │       ├── delete/      # Delete from FB + DB
 │       └── insights/    # Get Post Engagement
 └── components/           # UI Components
@@ -107,6 +112,7 @@ prompts/
 |-----------|-----------|----------|--------|
 | 06:00, 12:00, 15:00, 18:00, 20:00 | 23:00, 05:00, 08:00, 11:00, 13:00 | `/api/cron/daily` | Crawl → Summarize → Analyze → Rank → Generate **Trending** |
 | 20:30 | 13:30 | `/api/cron/generate-top5` | Generate **Daily Top 5** |
+| 07:00, 13:00, 16:00, 19:00, 21:00 | 00:00, 06:00, 09:00, 12:00, 14:00 | `/api/cron/auto-post` | Auto-post **approved posts** to Facebook |
 
 ### 🔧 การตั้งค่า GitHub Secrets
 
@@ -124,7 +130,7 @@ CRON_SECRET=your-random-secret-key
 สามารถรันด้วยตนเองได้ที่ **Actions > Auto News Cron > Run workflow**
 - เลือก `trending` = รันกระบวนการเต็ม + สร้างโพสต์ Trending
 - เลือก `top5` = สร้างโพสต์ Top 5 เท่านั้น
-
+- เลือก `auto-post` = โพสต์ approved posts ไปยัง Facebook
 
 ---
 
@@ -154,6 +160,7 @@ generated_posts     — Draft โพสต์ (content, image_url, status, poste
 |--------|----------|-------------|------|
 | GET | `/api/cron/daily` | รันกระบวนการเต็ม (Crawl → Summarize → Analyze → Rank → Generate Trending) | Bearer Token |
 | GET | `/api/cron/generate-top5` | สร้างโพสต์ Top 5 เท่านั้น | Bearer Token |
+| GET | `/api/cron/auto-post` | โพสต์ approved posts ไปยัง Facebook | Bearer Token |
 
 ### 📰 News Processing
 | Method | Endpoint | Description |
@@ -167,7 +174,8 @@ generated_posts     — Draft โพสต์ (content, image_url, status, poste
 ### 📱 Post Management
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/posts/publish` | โพสต์ไป Facebook Page |
+| POST | `/api/posts/publish` | โพสต์ไป Facebook Page (manual) |
+| POST | `/api/posts/auto-post` | Auto-post approved posts (manual trigger) |
 | POST | `/api/posts/action` | Approve/Update/Delete Draft |
 | DELETE | `/api/posts/delete` | ลบโพสต์จาก Facebook + DB |
 | GET | `/api/posts/insights` | ดู Engagement (Likes, Comments, Shares) |
@@ -220,7 +228,7 @@ CRON_SECRET
 ## 🛠️ Tech Stack Details
 
 | Category | Technology | Purpose |
-|----------|-----------|----------|
+|----------|-----------|---------|
 | **Frontend** | Next.js 15 (App Router) | React Framework |
 | | TypeScript | Type Safety |
 | | Tailwind CSS | Styling |
@@ -235,6 +243,10 @@ CRON_SECRET
 | | @resvg/resvg-js | SVG → PNG |
 | **Automation** | GitHub Actions | Cron Scheduler |
 | **Social** | Facebook Graph API | Post Publishing + Insights |
+
+## 📚 Documentation
+
+- [Auto-Post System](./AUTO_POST_SYSTEM.md) — Detailed auto-post workflow
 
 ## 📝 License
 

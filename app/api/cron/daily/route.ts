@@ -4,6 +4,7 @@ import { runSummarizer } from '@/services/summarizer';
 import { runAnalyzer } from '@/services/analyzer';
 import { runRanker } from '@/services/ranker';
 import { runGenerator } from '@/services/generator';
+import { autoApprovePosts } from '@/services/autoApprove';
 
 export const maxDuration = 300; // 5 mins for full process
 
@@ -43,9 +44,11 @@ export async function GET(request: Request) {
         // Step 4: Ranking
         await runStep('ranking', runRanker);
 
-        // Step 5: Generate Posts
         // Step 5: Generate Posts (Trending Only)
         await runStep('generate', () => runGenerator(['trending_now']));
+
+        // Step 6: Auto-Approve Posts
+        await runStep('auto-approve', autoApprovePosts);
 
         console.log('[Daily Cron] All steps completed!');
         return NextResponse.json({ success: true, ...results });
