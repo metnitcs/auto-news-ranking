@@ -6,25 +6,13 @@ export const maxDuration = 60;
 
 export async function runRanker() {
     try {
-        // 1. Fetch analyzed news for TODAY
-        const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
-        // Supabase select with time filter. 
-        // Assuming created_at is timestamptz.
+        const todayStr = new Date().toISOString().split('T')[0];
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
 
         const { data: analyzedNews, error: fetchError } = await supabase
             .from('news_analysis')
-            .select(`
-                id,
-                importance_score,
-                impact_score,
-                social_trend_score,
-                urgency_score,
-                category,
-                insight
-            `)
+            .select('id, importance_score, impact_score, social_trend_score, urgency_score, category, insight')
             .gte('created_at', startOfDay.toISOString());
 
         if (fetchError) {
@@ -35,7 +23,6 @@ export async function runRanker() {
             return { message: "No analyzed news found for today" };
         }
 
-        // Manual fetch summaries
         const analysisIds = analyzedNews.map(a => a.id);
         const { data: summaries } = await supabase
             .from('news_summary')
@@ -47,18 +34,14 @@ export async function runRanker() {
             summaries.forEach((s: any) => summaryMap.set(s.id, s.title_rewritten));
         }
 
-        // Sanitize function to remove problematic characters
         const sanitize = (text: string) => {
             if (!text) return '';
             return text
-                .replace(/["\\]/g, '')  // Remove quotes and backslashes
-                .replace(/[\r\n\t]/g, ' ')  // Remove newlines and tabs
-                .replace(/\s+/g, ' ')  // Normalize spaces
+                .replace(/["\\\n\r\t]/g, ' ')
+                .replace(/\s+/g, ' ')
                 .trim();
         };
 
-        // Limit to prevent context overflow if too many (though Gemini handles a lot)
-        // Let's cap at 100 items for safety/cost
         const itemsToRank = analyzedNews.slice(0, 100).map(item => ({
             id: item.id,
             title: sanitize(summaryMap.get(item.id) || "Untitled News"),
@@ -70,24 +53,21 @@ export async function runRanker() {
             insight: sanitize(item.insight || '')
         }));
 
-        // 2. Call Ranker AI
         const promptConfig = getPrompt('ranker', {
             news_items_with_scores_json: JSON.stringify(itemsToRank, null, 2)
         });
 
         const responseText = await callLLM({
             ...promptConfig,
-            jsonMode: true
+            jsonMode: true,
+            useCache: true
         });
 
-        // Robust JSON Cleanup
-        // Try to find the block first
         let cleanJson = responseText.trim();
-        const jsonBlockMatch = cleanJson.match(/```json\s*([{[\s\S]*?])\s*```/i) || cleanJson.match(/```\s*([{[\s\S]*?])\s*```/i);
+        const jsonBlockMatch = cleanJson.match(/```json\s*([\s\S]*?)\s*```/i) || cleanJson.match(/```\s*([\s\S]*?)\s*```/i);
         if (jsonBlockMatch) {
             cleanJson = jsonBlockMatch[1].trim();
         } else {
-            // Fallback cleanup
             cleanJson = cleanJson.replace(/```json/gi, '').replace(/```/g, '').trim();
         }
 
@@ -95,49 +75,10 @@ export async function runRanker() {
         try {
             rankingResult = JSON.parse(cleanJson);
         } catch (e: any) {
-            console.error("Failed to parse JSON.");
-            console.error("Error:", e.message);
-            console.error("Clean JSON (first 1000 chars):", cleanJson.substring(0, 1000));
-            console.error("Clean JSON (last 500 chars):", cleanJson.substring(Math.max(0, cleanJson.length - 500)));
-            
-            // Ultra-aggressive JSON fixing
-            try {
-                let fixed = cleanJson;
-                
-                // Step 1: Remove all newlines and tabs
-                fixed = fixed.replace(/[\r\n\t]/g, ' ');
-                
-                // Step 2: Fix reason field - remove everything problematic
-                fixed = fixed.replace(/"reason"\s*:\s*"[^"]*"/g, (match) => {
-                    // Extract content between quotes
-                    const content = match.match(/"reason"\s*:\s*"(.*)"$/)?.[1] || '';
-                    // Keep only safe characters: Thai, English, numbers, basic punctuation
-                    const cleaned = content
-                        .replace(/["'`\\]/g, '')  // Remove quotes and backslashes
-                        .replace(/[\r\n\t\f\v]/g, ' ')  // Remove whitespace
-                        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')  // Remove control chars
-                        .replace(/\s+/g, ' ')  // Normalize spaces
-                        .trim()
-                        .substring(0, 150);  // Limit length
-                    return `"reason":"${cleaned}"`;
-                });
-                
-                // Step 3: Clean up commas
-                fixed = fixed.replace(/,\s*([}\]])/g, '$1');  // Remove trailing commas
-                fixed = fixed.replace(/,\s*,+/g, ',');  // Remove double commas
-                
-                // Step 4: Normalize whitespace
-                fixed = fixed.replace(/\s+/g, ' ');
-                
-                rankingResult = JSON.parse(fixed);
-                console.log("Fixed JSON with ultra-aggressive sanitization");
-            } catch (e2: any) {
-                console.error("Still failed after sanitization:", e2.message);
-                throw new Error(`JSON Parse Error: ${e.message}`);
-            }
+            console.error("Failed to parse JSON:", e.message);
+            throw new Error(`JSON Parse Error: ${e.message}`);
         }
 
-        // Merge original details back into ranked list so UI has full data (title, individual scores)
         const enrichedRankedList = rankingResult.ranked.map((rankedItem: any) => {
             const original = itemsToRank.find(i => i.id === rankedItem.id);
             return {
@@ -148,7 +89,6 @@ export async function runRanker() {
             };
         });
 
-        // 3. Save to news_ranking_daily
         const { error: saveError } = await supabase
             .from('news_ranking_daily')
             .upsert({

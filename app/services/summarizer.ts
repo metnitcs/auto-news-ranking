@@ -2,24 +2,16 @@ import { supabase } from '@/lib/supabase';
 import { getPrompt } from '@/lib/promptEngine';
 import { callLLM } from '@/lib/llm';
 
-export const maxDuration = 60; // 1 min timeout
+export const maxDuration = 60;
 
 export async function runSummarizer() {
     console.log("Starting Summarizer...");
     let processedCount = 0;
     let errorCount = 0;
 
-    // 1. Fetch un-summarized news
-    // "Not in news_summary"
     const { data: rawNews, error: fetchError } = await supabase
         .from('news_raw')
         .select('*')
-        // Ensure we don't re-summarize. 
-        // Best way: Left join or check if ID exists in news_summary. 
-        // Supabase REST doesn't support NOT IN efficiently on subquery easily.
-        // For simple demo, we fetch recent raw news and filter in code or use stored procedure.
-        // Or better: store "status" in news_raw? 
-        // Let's assume we fetch top 20 recent news and skip if ID exists in news_summary.
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -31,7 +23,6 @@ export async function runSummarizer() {
         return { message: "No news to summarize" };
     }
 
-    // Check which ones are already summarized
     const rawIds = rawNews.map(n => n.id);
     const { data: existingSummaries } = await supabase
         .from('news_summary')
@@ -43,45 +34,38 @@ export async function runSummarizer() {
 
     console.log(`Found ${newsToProcess.length} news items to summarize.`);
 
-    // 2. Process Loop
     for (const news of newsToProcess) {
         try {
-            // console.log(`Summarizing: ${news.title.substring(0, 30)}...`);
-
             const promptConfig = getPrompt('summarizer', {
-                news_content: news.content,
-                news_source: news.meta?.source_name || news.source
+                raw_content: news.content
             });
 
             const summaryResult = await callLLM({
                 ...promptConfig,
-                jsonMode: true
+                jsonMode: true,
+                useCache: true
             });
 
-            // Parse JSON
             let summaryJson;
             try {
                 summaryJson = JSON.parse(summaryResult);
             } catch (e) {
-                // Fallback for non-JSON response (rare in Gemini json_mode)
                 summaryJson = {
-                    summary: summaryResult,
-                    title_rewritten: news.title,
-                    keywords: [],
-                    category: "General"
+                    title: news.title,
+                    summary: [summaryResult],
+                    entities: [],
+                    time_context: "",
+                    source_note: ""
                 };
             }
 
-            // 3. Save to news_summary
             const { error: saveError } = await supabase
                 .from('news_summary')
                 .insert({
                     id: news.id,
-                    title_rewritten: summaryJson.title_rewritten || news.title,
-                    // Mapped to 'entities' in schema
-                    entities: summaryJson.key_entities || [],
-                    // Schema has 'bullets' (jsonb), not 'summary' (text). Map summary to bullets as fallback.
-                    bullets: summaryJson.summary ? [summaryJson.summary] : []
+                    title_rewritten: summaryJson.title || news.title,
+                    entities: summaryJson.entities || [],
+                    bullets: summaryJson.summary || []
                 });
 
             if (saveError) {

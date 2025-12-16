@@ -6,8 +6,6 @@ export const maxDuration = 60;
 
 export async function runAnalyzer() {
     try {
-        // 1. Find summaries not yet analyzed
-        // Strategy: Manual Anti-Join to avoid Supabase Relationship issues
         const { data: summaries, error: fetchError } = await supabase
             .from('news_summary')
             .select('id, title_rewritten, bullets, entities, time_context')
@@ -22,18 +20,10 @@ export async function runAnalyzer() {
             return { message: "No summaries found" };
         }
 
-        // FORCE RUN ON ALL FETCHED SUMMARIES (as per original logic)
-        const pendingAnalysis = summaries;
-
-        if (pendingAnalysis.length === 0) {
-            return { message: "No pending news to analyze" };
-        }
-
-        // 1.5 Fetch Meta manually (Robustness fix)
         const { data: rawData } = await supabase
             .from('news_raw')
             .select('id, meta')
-            .in('id', pendingAnalysis.map(s => s.id));
+            .in('id', summaries.map(s => s.id));
 
         const metaMap = new Map();
         if (rawData) {
@@ -43,9 +33,8 @@ export async function runAnalyzer() {
         let successCount = 0;
         let failedCount = 0;
 
-        for (const item of pendingAnalysis) {
+        for (const item of summaries) {
             try {
-                // Prepare normalized JSON for the prompt
                 const normalizedJson = JSON.stringify({
                     title: item.title_rewritten,
                     summary: item.bullets,
@@ -53,25 +42,20 @@ export async function runAnalyzer() {
                     time_context: item.time_context
                 }, null, 2);
 
-                // Extract metrics from manual map
                 const rawMeta = metaMap.get(item.id) || {};
                 const engagement = rawMeta.engagement || {};
                 const metricsJson = JSON.stringify(engagement, null, 2);
 
-                // 2. Prepare Prompt
                 const promptConfig = getPrompt('analyzer', {
                     normalized_news_json: normalizedJson,
                     metrics_json: metricsJson
                 });
 
-                // 3. Call AI
                 const responseText = await callLLM({
                     ...promptConfig,
-                    jsonMode: true
+                    jsonMode: true,
+                    useCache: true
                 });
-
-                // Debug: Log raw response to see what AI returned
-                console.log(`[Analyzer Debug] Response for ${item.id}:`, responseText);
 
                 const cleanJson = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
                 let analysisData;
@@ -80,10 +64,9 @@ export async function runAnalyzer() {
                 } catch (e) {
                     console.error(`[Analyzer Error] JSON Parse Failed: ${e}`);
                     failedCount++;
-                    continue; // Skip to next item
+                    continue;
                 }
 
-                // 4. Save to news_analysis
                 const { error: insertError } = await supabase
                     .from('news_analysis')
                     .upsert({
@@ -118,6 +101,6 @@ export async function runAnalyzer() {
 
     } catch (error) {
         console.error("Analyzer Process Failed:", error);
-        throw error; // Re-throw to be handled by caller
+        throw error;
     }
 }
