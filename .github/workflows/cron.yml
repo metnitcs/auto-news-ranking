@@ -1,12 +1,10 @@
 name: Auto News Cron
 on:
   schedule:
-    # Trending: 06, 12, 15, 18, 20 TH (23, 05, 08, 11, 13 UTC)
+    # Trending + Auto-Post: 06, 12, 15, 18, 20 TH (23, 05, 08, 11, 13 UTC)
     - cron: '0 23,5,8,11,13 * * *'
     # Top 5: 20:30 TH (13:30 UTC)
     - cron: '30 13 * * *'
-    # Auto-Post: 07, 13, 16, 19, 21 TH (00, 06, 09, 12, 14 UTC)
-    - cron: '0 0,6,9,12,14 * * *'
   workflow_dispatch:
     inputs:
       job_type:
@@ -17,7 +15,6 @@ on:
         options:
           - trending
           - top5
-          - auto-post 
 
 jobs:
   auto-news-job:
@@ -37,9 +34,6 @@ jobs:
             if [ "$hour" -eq 13 ] && [ "$minute" -eq 30 ]; then
               echo "type=top5" >> $GITHUB_OUTPUT
               echo "Detected Top 5 Schedule (13:30 UTC)"
-            elif [[ "$hour" =~ ^(0|6|9|12|14)$ ]]; then
-              echo "type=auto-post" >> $GITHUB_OUTPUT
-              echo "Detected Auto-Post Schedule"
             else
               echo "type=trending" >> $GITHUB_OUTPUT
               echo "Detected Trending Schedule"
@@ -54,6 +48,43 @@ jobs:
         run: |
           echo "Executing Trending Loop..."
           response=$(curl -L -s -w "\n%{http_code}" -X GET "${APP_URL}/api/cron/daily" -H "Authorization: Bearer ${CRON_SECRET}")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "Response: $body"
+          echo "HTTP Status: $http_code"
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "Success!"
+          else
+            echo "Error: API returned status $http_code"
+            exit 1
+          fi
+
+      - name: Trigger Auto-Approve
+        if: steps.job-type.outputs.type == 'trending'
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "Executing Auto-Approve..."
+          response=$(curl -L -s -w "\n%{http_code}" -X GET "${APP_URL}/api/cron/auto-approve" -H "Authorization: Bearer ${CRON_SECRET}")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "Response: $body"
+          echo "HTTP Status: $http_code"
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "Auto-Approve Success!"
+          else
+            echo "Warning: Auto-Approve returned status $http_code"
+          fi
+
+      - name: Trigger Auto-Post
+        if: steps.job-type.outputs.type == 'trending'
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "Executing Auto-Post to Facebook..."
+          response=$(curl -L -s -w "\n%{http_code}" -X GET "${APP_URL}/api/cron/auto-post" -H "Authorization: Bearer ${CRON_SECRET}")
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
           echo "Response: $body"
@@ -84,13 +115,13 @@ jobs:
             exit 1
           fi
 
-      - name: Trigger Auto-Approve
-        if: steps.job-type.outputs.type == 'auto-post'
+      - name: Trigger Auto-Approve for Top 5
+        if: steps.job-type.outputs.type == 'top5'
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          echo "Executing Auto-Approve..."
+          echo "Executing Auto-Approve for Top 5..."
           response=$(curl -L -s -w "\n%{http_code}" -X GET "${APP_URL}/api/cron/auto-approve" -H "Authorization: Bearer ${CRON_SECRET}")
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
@@ -102,13 +133,13 @@ jobs:
             echo "Warning: Auto-Approve returned status $http_code"
           fi
 
-      - name: Trigger Auto-Post
-        if: steps.job-type.outputs.type == 'auto-post'
+      - name: Trigger Auto-Post for Top 5
+        if: steps.job-type.outputs.type == 'top5'
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          echo "Executing Auto-Post to Facebook..."
+          echo "Executing Auto-Post for Top 5..."
           response=$(curl -L -s -w "\n%{http_code}" -X GET "${APP_URL}/api/cron/auto-post" -H "Authorization: Bearer ${CRON_SECRET}")
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
