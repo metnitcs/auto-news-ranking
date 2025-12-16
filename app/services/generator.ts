@@ -65,8 +65,7 @@ export async function runGenerator(variants: string[] = ['daily_top5', 'trending
                 let imageUrl = null;
                 try {
                     if (listDetails.length > 0) {
-                        // สร้างการ์ตูนจาก headline ที่ 1
-                        imageUrl = await generateMangaImage(listDetails[0]);
+                        imageUrl = await generateMangaImage(listDetails[0], variant as any);
                         if (imageUrl) {
                             console.log(`[Generator] ✅ Manga comic generated: ${imageUrl}`);
                         }

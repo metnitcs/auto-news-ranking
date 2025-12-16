@@ -3,34 +3,49 @@ import { supabase } from '@/lib/supabase';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
-export async function generateMangaImage(newsItem: any) {
+export async function generateMangaImage(newsItem: any, type: 'daily_top5' | 'trending_now' = 'daily_top5') {
     try {
-        console.log(`[Manga] Generating manga comic for: ${newsItem.title}`);
+        console.log(`[Manga] Generating manga comic for ${type}: ${newsItem.title}`);
         
         const headline = newsItem.title?.substring(0, 80) || 'News';
         const summary = newsItem.bullets?.[0]?.substring(0, 100) || '';
-        
-        const prompt = `Create a Japanese manga-style comic strip image with these specifications:
 
-Story: "${headline}"
-Context: "${summary}"
+        const prompt = `Create a high-quality Japanese manga-style comic strip (vertical, 3 panels) based on this story.
 
-Layout: 3 vertical panels (read top to bottom)
-- Panel 1 (top): Introduce the situation/problem
-- Panel 2 (middle): Show the action/development
-- Panel 3 (bottom): Show the result/conclusion
+SOURCE STORY (Thai): "${headline} - ${summary}"
 
-Design requirements:
-- Style: Colorful manga/anime art style (NOT black and white)
-- Size: 600x900px (vertical orientation)
-- Each panel: 600x300px
-- Include speech bubbles with short text (in English or Thai)
-- Use vibrant colors
-- Include manga-style effects (speed lines, emphasis marks, etc.)
-- Professional quality
-- Make it engaging and easy to understand
+*** INSTRUCTIONS FOR AI ***
+1. ANALYZE the Thai story above.
+2. AUTOMATELY TRANSLATE the key events into short English sentences.
+3. GENERATE the image with specific "Bilingual Dialogue" in speech bubbles as follows:
 
-The story should convey the news headline in a fun, visual way.`;
+Layout Requirements:
+- Vertical strip, 3 equal panels.
+- Colorful, vibrant Anime style.
+- High text legibility.
+
+--- PANEL BREAKDOWN ---
+
+PANEL 1 (The Setup):
+- Visual: Illustrate the beginning of the story.
+- TEXT REQ: Create a speech bubble containing the Thai summary of the intro AND your English translation of it.
+- Text format: "Thai Text / English Text"
+
+PANEL 2 (The Action):
+- Visual: Illustrate the main event/conflict.
+- TEXT REQ: Create a speech bubble containing the Thai summary of the action AND your English translation of it.
+- Text format: "Thai Text / English Text"
+
+PANEL 3 (The Conclusion):
+- Visual: Illustrate the result/ending.
+- TEXT REQ: Create a speech bubble containing the Thai summary of the result AND your English translation of it.
+- Text format: "Thai Text / English Text"
+
+*** CRITICAL ***
+- Ensure EVERY panel has bilingual text (Thai & English).
+- Do not leave any bubble with only one language.
+- Use the translation capability to ensure the English text matches the Thai context.
+`;
 
         console.log(`[Manga] Calling Gemini 3 Pro Image Preview...`);
         const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
@@ -63,7 +78,7 @@ The story should convey the news headline in a fun, visual way.`;
                     
                     const imageBuffer = Buffer.from(part.inlineData.data, 'base64');
                     
-                    const fileName = `manga_${Date.now()}.png`;
+                    const fileName = `manga_${type}_${Date.now()}.png`;
                     const { error: uploadError } = await supabase
                         .storage
                         .from('post-images')
