@@ -23,17 +23,15 @@ jobs:
       - name: Determine Job Type
         id: job-type
         run: |
-          # Manual trigger: use input
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "type=${{ github.event.inputs.job_type }}" >> $GITHUB_OUTPUT
             echo "Manual trigger: ${{ github.event.inputs.job_type }}"
           else
-            # Scheduled trigger: check time
             hour=$(date -u +%H)
             minute=$(date -u +%M)
             echo "Current time (UTC): $hour:$minute"
             
-            if [ "$hour" -eq 13 ] && [ "$minute" -ge 25 ] && [ "$minute" -le 35 ]; then
+            if [ "$hour" -eq 13 ] && [ "$minute" -eq 30 ]; then
               echo "type=top5" >> $GITHUB_OUTPUT
               echo "Detected Top 5 Schedule (13:30 UTC)"
             else
