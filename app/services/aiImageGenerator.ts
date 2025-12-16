@@ -9,39 +9,47 @@ export async function generateImageFromAI(type: 'daily_top5' | 'trending_now', n
         
         const isTop5 = type === 'daily_top5';
         
-        // ตัดข้อความให้สั้น (max 50 chars per headline)
+        // ตัดข้อความให้สั้นมาก (max 40 chars)
         const titles = newsItems.map((item, i) => {
-            const title = item.title?.substring(0, 50) || 'News';
+            const title = item.title?.substring(0, 40) || 'News';
             return `${i + 1}. ${title}`;
         }).join('\n');
         
         const prompt = isTop5
-            ? `Create a professional infographic image with these requirements:
-- Title: "TOP 5 NEWS"
-- Subtitle: "Today's Headlines"
-- Background: Purple to blue gradient (135 degrees)
-- Text color: White
-- Layout: Numbered list (1-5) with short headlines below
-- Headlines to display:
+            ? `Create a professional news infographic image.
+Title: TOP 5 NEWS
+Subtitle: Today's Headlines
+
+Headlines to display (keep them SHORT and READABLE):
 ${titles}
-- Style: Modern, clean, professional
-- Size: 1200x1200px
-- Font: Large, bold, easy to read
-- Include footer: "Auto News Ranking"
-- Make sure all text is fully visible and not cut off`
-            : `Create a professional infographic image with these requirements:
-- Title: "TRENDING NOW"
-- Subtitle: "What's Hot"
-- Background: Pink to red gradient (135 degrees)
+
+Design requirements:
+- Background: Purple to blue gradient
 - Text color: White
-- Layout: Numbered list with short headlines below
-- Headlines to display:
-${titles}
-- Style: Modern, clean, professional
+- Layout: Title at top, then numbered headlines (1-5), footer at bottom
+- Font: Large, bold, VERY READABLE
 - Size: 1200x1200px
-- Font: Large, bold, easy to read
-- Include footer: "Auto News Ranking"
-- Make sure all text is fully visible and not cut off`;
+- IMPORTANT: Make sure ALL text is FULLY VISIBLE and NOT CUT OFF
+- IMPORTANT: Use larger font sizes to ensure readability
+- Footer: "Auto News Ranking"
+- Style: Modern, professional, clean`
+            : `Create a professional news infographic image.
+Title: TRENDING NOW
+Subtitle: What's Hot
+
+Headlines to display (keep them SHORT and READABLE):
+${titles}
+
+Design requirements:
+- Background: Pink to red gradient
+- Text color: White
+- Layout: Title at top, then numbered headlines, footer at bottom
+- Font: Large, bold, VERY READABLE
+- Size: 1200x1200px
+- IMPORTANT: Make sure ALL text is FULLY VISIBLE and NOT CUT OFF
+- IMPORTANT: Use larger font sizes to ensure readability
+- Footer: "Auto News Ranking"
+- Style: Modern, professional, clean`;
 
         console.log(`[AI Image] Calling Gemini 3 Pro Image Preview...`);
         const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
@@ -58,7 +66,7 @@ ${titles}
                 }
             ],
             generationConfig: {
-                temperature: 0.7,
+                temperature: 0.6,
                 maxOutputTokens: 2048,
             }
         });

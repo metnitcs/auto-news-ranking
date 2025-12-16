@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { getPrompt } from '@/lib/promptEngine';
 import { callLLM } from '@/lib/llm';
-import { generateImageFromAI } from './aiImageGenerator';
+import { generateMangaImage } from './mangaImageGenerator';
 
 export async function runGenerator(variants: string[] = ['daily_top5', 'trending_now']) {
     try {
@@ -61,15 +61,18 @@ export async function runGenerator(variants: string[] = ['daily_top5', 'trending
                 });
                 console.log(`[Generator] Post content generated (${postContent.length} chars)`);
 
-                console.log(`[Generator] Generating AI image...`);
+                console.log(`[Generator] Generating manga comic for top headline...`);
                 let imageUrl = null;
                 try {
-                    imageUrl = await generateImageFromAI(variant as any, listDetails);
-                    if (imageUrl) {
-                        console.log(`[Generator] ✅ Image generated: ${imageUrl}`);
+                    if (listDetails.length > 0) {
+                        // สร้างการ์ตูนจาก headline ที่ 1
+                        imageUrl = await generateMangaImage(listDetails[0]);
+                        if (imageUrl) {
+                            console.log(`[Generator] ✅ Manga comic generated: ${imageUrl}`);
+                        }
                     }
                 } catch (imgErr: any) {
-                    console.error(`[Generator] ⚠️ Image generation failed:`, imgErr.message);
+                    console.error(`[Generator] ⚠️ Manga generation failed:`, imgErr.message);
                 }
 
                 console.log(`[Generator] Saving to database...`);
